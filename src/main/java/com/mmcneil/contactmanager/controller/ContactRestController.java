@@ -19,6 +19,16 @@ public class ContactRestController {
         return contacts;
     }
 
+    @GetMapping("/{id}")
+    public Contact getContactsById(@PathVariable long id) {
+        for (Contact contact : contacts) {
+            if (contact.getId() == id) {
+                return contact;
+            }
+        }
+        return null;
+    }
+
     @PostMapping
     public Contact addContact(@RequestBody Contact contact) {
         System.out.println("Received contact: " + contact);
