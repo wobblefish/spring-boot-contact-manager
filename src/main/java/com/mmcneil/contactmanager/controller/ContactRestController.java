@@ -1,39 +1,44 @@
 package com.mmcneil.contactmanager.controller;
 
 import com.mmcneil.contactmanager.model.Contact;
+import com.mmcneil.contactmanager.repository.ContactRepository;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("api/contacts")
 public class ContactRestController {
 
-    // Simulated in-memory "database"
-    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    private final List<Contact> contacts = new ArrayList<>();
+    private final ContactRepository contactRepository;
 
+    public ContactRestController(ContactRepository contactRepository) {
+        this.contactRepository = contactRepository;
+    }
+
+    // GET all contacts
     @GetMapping
     public List<Contact> getContacts() {
-        return contacts;
+        return contactRepository.findAll();
     }
 
+    // GET contact by id
     @GetMapping("/{id}")
     public Contact getContactsById(@PathVariable long id) {
-        for (Contact contact : contacts) {
-            if (contact.getId() == id) {
-                return contact;
-            }
-        }
-        return null;
+        return contactRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Contact not found"));
     }
 
+    // POST a new contact
     @PostMapping
     public Contact addContact(@RequestBody Contact contact) {
-        System.out.println("Received contact: " + contact);
-        contacts.add(contact);
-        return contact;
+        return contactRepository.save(contact);
+    }
+
+    // DELETE a contact by id
+    @DeleteMapping("/{id}")
+    public void deleteContact(@PathVariable Long id) {
+        contactRepository.deleteById(id);
     }
 
 }
