@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact List</title>
+</head>
+<body>
+
+<a th:href="@{/contacts/new}">Add Contact</a>
+
+<ul>
+    <li th:each="contact : ${contacts}">
+        <strong th:text="${contact.name}">Name</strong>
+        <ul>
+            <li><span th:text="${contact.email}">Email</span></li>
+            <li><span th:text="${contact.phone}">Phone</span></li>
+        </ul>
+        <form th:action="@{'/contacts/delete/' + ${contact.id}}" method="post" style="display:inline;">
+            <button type="submit">Delete</button>
+        </form>
+    </li>
+</ul>
+
+</body>
+</html>
