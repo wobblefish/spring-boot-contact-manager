@@ -2,6 +2,8 @@ package com.mmcneil.contactmanager.controller;
 
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +35,19 @@ public class ContactRestController {
     @PostMapping
     public Contact addContact(@RequestBody Contact contact) {
         return contactRepository.save(contact);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Contact> updateContact(@PathVariable Long id, @RequestBody Contact updatedContact) {
+        return contactRepository.findById(id)
+            .map(contact -> {
+                contact.setName(updatedContact.getName());
+                contact.setEmail(updatedContact.getEmail());
+                contact.setPhone(updatedContact.getPhone());
+                contactRepository.save(contact);
+                return ResponseEntity.ok(contact);
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // DELETE a contact by id

@@ -15,6 +15,7 @@
             <li><span th:text="${contact.email}">Email</span></li>
             <li><span th:text="${contact.phone}">Phone</span></li>
         </ul>
+        <a th:href="@{'/contacts/edit/' + ${contact.id}}">Edit</a>
         <form th:action="@{'/contacts/delete/' + ${contact.id}}" method="post" style="display:inline;">
             <button type="submit">Delete</button>
         </form>

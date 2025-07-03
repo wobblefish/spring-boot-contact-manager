@@ -8,6 +8,7 @@
 <h1>Add New Contact</h1>
 
 <form th:action="@{/contacts}" th:object="${contact}" method="post">
+    <input type="hidden" th:field="*{id}" />
     <label>Name: <input type="text" th:field="*{name}" /></label><br/>
     <label>Email: <input type="text" th:field="*{email}" /></label><br/>
     <label>Phone: <input type="text" th:field="*{phone}" /></label><br/>

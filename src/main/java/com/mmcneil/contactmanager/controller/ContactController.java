@@ -36,6 +36,21 @@ public class ContactController {
         return "redirect:/contacts";
     }
 
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Contact contact = contactRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid contact Id:" + id));
+        model.addAttribute("contact", contact);
+        return "contact-form"; // reuse the same form for create/edit
+    }
+
+    @PostMapping("/edit/{id}")
+    public String updateContact(@PathVariable Long id, @ModelAttribute Contact contact) {
+        contact.setId(id); // ensure the ID is set
+        contactRepository.save(contact); // JPA will update if ID exists
+        return "redirect:/contacts";
+    }
+
     // Misconception - assumed this should be a DELETE but HTML forms only know GET/POST so a DeleteMapping would be ignored in this case
     @PostMapping("/delete/{id}")
     public String deleteContact(@PathVariable Long id) {
