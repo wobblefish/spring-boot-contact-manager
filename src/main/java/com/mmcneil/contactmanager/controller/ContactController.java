@@ -27,6 +27,8 @@ public class ContactController {
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("contact", new Contact());
+        model.addAttribute("formAction", "/contacts");
+        model.addAttribute("formMode", "create");
         return "contact-form";
     }
 
@@ -41,6 +43,8 @@ public class ContactController {
         Contact contact = contactRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Invalid contact Id:" + id));
         model.addAttribute("contact", contact);
+        model.addAttribute("formAction", "/contacts/edit/" + id);
+        model.addAttribute("formMode", "edit");
         return "contact-form"; // reuse the same form for create/edit
     }
 

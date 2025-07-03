@@ -2,17 +2,17 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Add New Contact</title>
+    <title th:text="${formMode == 'edit'} ? 'Edit Contact' : 'Add New Contact'"></title>
 </head>
 <body>
-<h1>Add New Contact</h1>
+<h1 th:text="${formMode == 'edit'} ? 'Edit Contact' : 'Add New Contact'"></h1>
 
-<form th:action="@{/contacts}" th:object="${contact}" method="post">
+<form th:action="@{${formAction}}" th:object="${contact}" method="post">
     <input type="hidden" th:field="*{id}" />
     <label>Name: <input type="text" th:field="*{name}" /></label><br/>
     <label>Email: <input type="text" th:field="*{email}" /></label><br/>
     <label>Phone: <input type="text" th:field="*{phone}" /></label><br/>
-    <button type="submit">Save</button>
+    <button type="submit" th:text="${formMode == 'edit'} ? 'Update' : 'Save'"></button>
 </form>
 </body>
 </html>
