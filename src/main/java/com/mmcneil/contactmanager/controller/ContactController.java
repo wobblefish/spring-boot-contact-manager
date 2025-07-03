@@ -2,9 +2,11 @@ package com.mmcneil.contactmanager.controller;
 
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
@@ -33,7 +35,15 @@ public class ContactController {
     }
 
     @PostMapping
-    public String addContact(@ModelAttribute Contact contact) {
+    public String addContact(@Valid @ModelAttribute Contact contact,
+        BindingResult result,
+        Model model
+    ) {
+        if (result.hasErrors()) {
+            model.addAttribute("formAction", "/contacts");
+            model.addAttribute("formMode", "create");
+            return "contact-form";
+        }
         contactRepository.save(contact);
         return "redirect:/contacts";
     }
@@ -49,9 +59,25 @@ public class ContactController {
     }
 
     @PostMapping("/edit/{id}")
-    public String updateContact(@PathVariable Long id, @ModelAttribute Contact contact) {
-        contact.setId(id); // ensure the ID is set
-        contactRepository.save(contact); // JPA will update if ID exists
+    public String updateContact(
+        @PathVariable Long id,
+        @Valid @ModelAttribute Contact contact,
+        BindingResult result,
+        Model model
+    ) {
+        if (result.hasErrors()) {
+            model.addAttribute("formAction", "/contacts/edit/" + id);
+            model.addAttribute("formMode", "edit");
+            return "contact-form";
+        }
+        // Fetch existing contact
+        Contact existingContact = contactRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid contact Id:" + id));
+        // Update fields
+        existingContact.setName(contact.getName());
+        existingContact.setEmail(contact.getEmail());
+        existingContact.setPhone(contact.getPhone());
+        contactRepository.save(existingContact);
         return "redirect:/contacts";
     }
 
