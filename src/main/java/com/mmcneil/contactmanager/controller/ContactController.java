@@ -1,5 +1,6 @@
 package com.mmcneil.contactmanager.controller;
 
+import com.mmcneil.contactmanager.exception.ContactNotFoundException;
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
 import jakarta.validation.Valid;
@@ -51,7 +52,7 @@ public class ContactController {
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model) {
         Contact contact = contactRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid contact Id:" + id));
+            .orElseThrow(() -> new ContactNotFoundException(id));
         model.addAttribute("contact", contact);
         model.addAttribute("formAction", "/contacts/edit/" + id);
         model.addAttribute("formMode", "edit");
@@ -72,7 +73,7 @@ public class ContactController {
         }
         // Fetch existing contact
         Contact existingContact = contactRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid contact Id:" + id));
+            .orElseThrow(() -> new ContactNotFoundException(id));
         // Update fields
         existingContact.setName(contact.getName());
         existingContact.setEmail(contact.getEmail());
