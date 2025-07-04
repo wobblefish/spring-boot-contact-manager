@@ -3,8 +3,10 @@ package com.mmcneil.contactmanager.controller;
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class ContactRestController {
     @GetMapping("/{id}")
     public Contact getContactsById(@PathVariable long id) {
         return contactRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Contact not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
     }
 
     // POST a new contact
