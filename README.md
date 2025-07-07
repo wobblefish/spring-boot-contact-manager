@@ -86,9 +86,34 @@ After verifying the API worked, I shifted to front-end rendering with Thymeleaf.
 - Identified common issues like missing model attributes and malformed HTML
 - Learned about HTML form method constraints and how to handle them
 
+# Testing
+
+## 1. JPA Repository Tests (ContactRepositoryTest)
+Coverage:
+- Save and retrieve by ID
+- Update existing contact
+- Delete contact by ID
+- Find all contacts
+- Retrieve non-existent contact (returns empty)
+
+## 2. REST Controller Tests (ContactRestControllerTest)
+Coverage:
+- GET /api/contacts — Returns all contacts (200 OK)
+- GET /api/contacts/{id} — Returns contact if found (200 OK), 404 if not found
+- POST /api/contacts — Creates contact (201 Created, Location header, JSON body)
+- PUT /api/contacts/{id} — Updates contact if found (200 OK), 404 if not found
+- DELETE /api/contacts/{id} — Deletes contact (200 OK), verifies repository interaction
+
+## 3. Web (MVC/Thymeleaf) Controller Tests (ContactControllerTest)
+Coverage:
+- GET /contacts — Shows contact list view, model contains all contacts
+- GET /contacts/new — Shows create form with blank contact, correct model attributes
+- POST /contacts — Creates contact and redirects on success; shows validation errors on failure
+- GET /contacts/edit/{id} — Shows edit form if found; renders error page if not found
+- POST /contacts/edit/{id} — Updates and redirects on success; shows validation errors on failure
+- POST /contacts/delete/{id} — Deletes contact and redirects, verifies repository interaction
+
 ## Planning Forward
-- Additional documentation
-- Add testing using JUnit and Spring Boot Test
 - Deployment options: Heroku, Fly.io, Render
 - Add Users, user authentication and authorization (Spring Security)
 
