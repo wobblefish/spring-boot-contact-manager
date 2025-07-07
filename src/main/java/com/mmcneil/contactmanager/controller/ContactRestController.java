@@ -7,7 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -35,8 +37,14 @@ public class ContactRestController {
 
     // POST a new contact
     @PostMapping
-    public Contact addContact(@RequestBody Contact contact) {
-        return contactRepository.save(contact);
+    public ResponseEntity<Contact> addContact(@RequestBody Contact contact) {
+        Contact saved = contactRepository.save(contact);
+        URI location = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(saved.getId())
+            .toUri();
+        return ResponseEntity.created(location).body(saved);
     }
 
     @PutMapping("/{id}")
