@@ -113,6 +113,29 @@ Coverage:
 - POST /contacts/edit/{id} — Updates and redirects on success; shows validation errors on failure
 - POST /contacts/delete/{id} — Deletes contact and redirects, verifies repository interaction
 
+## Spring Security Integration Milestones (TDD)
+
+### Block 1: User Entity & Repository
+- Added `User` entity with JPA annotations: `@Entity`, `@Table(name = "users")`, `@Id`, `@GeneratedValue`, `@Column(unique = true)`
+- Used `Set<String>` for unique roles with `@ElementCollection` and `@CollectionTable`
+- Created `UserRepository` extending `JpaRepository<User, Long>` with custom `findByUsername` method
+- Wrote and passed repository tests for save, find, and unique constraint (using `DataIntegrityViolationException`)
+- **Gotcha:** Avoided reserved SQL keywords by naming table `users` instead of `user`
+
+### Block 2: CustomUserDetailsService
+- Added dependency on Spring Security
+- Created `CustomUserDetailsService` implementing `UserDetailsService` interface
+    - Utilized Java Streams to efficiently map user roles to granted authorities, aligning with Spring Security conventions
+    - Applied functional programming concepts with `.map()` to transform role strings into `SimpleGrantedAuthority` instances
+    - Leveraged `collect(Collectors.toSet())` for concise and immutable authority collection
+    - Used a functional approach for greater clarity and conciseness compared to imperative iteration
+    - Provided explicit authority mapping to ensure correct role-based access control
+- Implemented `loadUserByUsername` to fetch user, map roles to `SimpleGrantedAuthority`, and return a Spring Security `User` object
+- Wrote and passed unit tests for loading users, handling not found, and role mapping
+- **Gotcha:** Used interface-driven design for testability and Spring Security integration; mapped roles as `ROLE_` prefixed authorities
+
+---
+
 ## Planning Forward
 - Deployment options: Heroku, Fly.io, Render
 - Add Users, user authentication and authorization (Spring Security)
@@ -125,9 +148,22 @@ Coverage:
 ## Annotations Learned
 
 - @SpringBootApplication
-- @Entity, @Id, @GeneratedValue
+- @Override
+- @Entity, @Table, @Id, @GeneratedValue, @Column(unique = true)
 - @RestController, @Controller
 - @RequestMapping, @GetMapping, @PostMapping, @DeleteMapping
 - @Autowired, @PathVariable, @RequestBody, @ModelAttribute
 - @Valid, @NotBlank, @Email
 - @ControllerAdvice, @ExceptionHandler
+- @ElementCollection, @CollectionTable
+
+## Interfaces & Exceptions Introduced
+
+- JpaRepository – Spring Data repository base
+- UserDetailsService – Loads user for security
+- UserDetails – Spring Security user contract
+- SimpleGrantedAuthority – Security role wrapper
+- DataIntegrityViolationException – JPA unique constraint error
+- UsernameNotFoundException – User not found error
+- ContactNotFoundException – Custom missing contact error
+- NoHandlerFoundException – Spring MVC 404 handler
