@@ -13,7 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/contacts")
+@RequestMapping("/api/contacts")
 public class ContactRestController {
 
     private final ContactRepository contactRepository;

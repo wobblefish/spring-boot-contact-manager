@@ -1,7 +1,6 @@
-package com.mmcneil.contactmanager;
+package com.mmcneil.contactmanager.repository;
 
 import com.mmcneil.contactmanager.model.Contact;
-import com.mmcneil.contactmanager.repository.ContactRepository;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,5 @@
-package com.mmcneil.contactmanager;
+package com.mmcneil.contactmanager.controller;
 
-import com.mmcneil.contactmanager.controller.ContactController;
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
 import org.junit.jupiter.api.DisplayName;

@@ -1,7 +1,6 @@
-package com.mmcneil.contactmanager;
+package com.mmcneil.contactmanager.repository;
 
 import com.mmcneil.contactmanager.model.User;
-import com.mmcneil.contactmanager.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +24,7 @@ public class UserRepositoryTest {
         User user = new User();
         Set<String> roles = Set.of("user");
         user.setUsername("tester");
+        user.setEmail("tester@example.com");
         user.setPassword("Hg324jXZ");
         user.setRoles(roles);
 
@@ -41,6 +41,7 @@ public class UserRepositoryTest {
     void testFindByUsername() {
         User user = new User();
         user.setUsername("uniqueuser");
+        user.setEmail("uniqueuser@example.com");
         user.setPassword("pass");
         user.setRoles(Set.of("user"));
         userRepository.save(user);
@@ -56,16 +57,37 @@ public class UserRepositoryTest {
         User user1 = new User();
         user1.setUsername("dupeuser");
         user1.setPassword("pass1");
+        user1.setEmail("dupeuser@example.com");
         user1.setRoles(Set.of("user"));
         userRepository.save(user1);
     
         User user2 = new User();
         user2.setUsername("dupeuser");
         user2.setPassword("pass2");
+        user2.setEmail("dupeuser2@example.com");
         user2.setRoles(Set.of("admin"));
-        userRepository.save(user2);
     
-        assertThatThrownBy(() -> userRepository.flush())
+        assertThatThrownBy(() -> userRepository.save(user2))
+            .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("Should not allow duplicate emails")
+    void testUniqueEmailConstraint() {
+        User user1 = new User();
+        user1.setUsername("dupeuser");
+        user1.setPassword("pass1");
+        user1.setEmail("dupeuser@example.com");
+        user1.setRoles(Set.of("user"));
+        userRepository.save(user1);
+    
+        User user2 = new User();
+        user2.setUsername("dupeuser2");
+        user2.setPassword("pass2");
+        user2.setEmail("dupeuser@example.com");
+        user2.setRoles(Set.of("admin"));
+        
+        assertThatThrownBy(() -> userRepository.save(user2))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 }
