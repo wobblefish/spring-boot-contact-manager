@@ -115,30 +115,56 @@ Coverage:
 
 ## Spring Security Integration Milestones (TDD)
 
-### Block 1: User Entity & Repository
+**Established user entity, repository, and unique constraints:**
 - Added `User` entity with JPA annotations: `@Entity`, `@Table(name = "users")`, `@Id`, `@GeneratedValue`, `@Column(unique = true)`
 - Used `Set<String>` for unique roles with `@ElementCollection` and `@CollectionTable`
 - Created `UserRepository` extending `JpaRepository<User, Long>` with custom `findByUsername` method
 - Wrote and passed repository tests for save, find, and unique constraint (using `DataIntegrityViolationException`)
 - **Gotcha:** Avoided reserved SQL keywords by naming table `users` instead of `user`
 
-### Block 2: CustomUserDetailsService
-- Added dependency on Spring Security
-- Created `CustomUserDetailsService` implementing `UserDetailsService` interface
-    - Utilized Java Streams to efficiently map user roles to granted authorities, aligning with Spring Security conventions
-    - Applied functional programming concepts with `.map()` to transform role strings into `SimpleGrantedAuthority` instances
-    - Leveraged `collect(Collectors.toSet())` for concise and immutable authority collection
-    - Used a functional approach for greater clarity and conciseness compared to imperative iteration
-    - Provided explicit authority mapping to ensure correct role-based access control
-- Implemented `loadUserByUsername` to fetch user, map roles to `SimpleGrantedAuthority`, and return a Spring Security `User` object
-- Wrote and passed unit tests for loading users, handling not found, and role mapping
-- **Gotcha:** Used interface-driven design for testability and Spring Security integration; mapped roles as `ROLE_` prefixed authorities
+**Integrated Spring Security user loading and role mapping:**
+- Added dependency on Spring Security.
+- Implemented `CustomUserDetailsService` to load users by username, map roles to `SimpleGrantedAuthority`, and return a Spring Security `User` object.
+- Used Java Streams for efficient authority mapping.
+- Wrote and passed unit tests for user loading, not-found handling, and correct role mapping.
+- **Gotcha:** Used interface-driven design for testability and Spring Security integration; mapped roles as `ROLE_` prefixed authorities.
 
+**Configured security filter chains and authentication flows:**
+- Implemented `SecurityConfig` using `SecurityFilterChain` beans.
+- Two filter chains:
+    - **API chain (`/api/**`)**: Stateless, HTTP Basic, always returns 401 for unauthenticated or invalid credentials.
+    - **Web chain (all other endpoints)**: Form login, redirects unauthenticated users to `/login`.
+- Permitted `/error` in both chains to prevent error dispatches from falling through to the web chain (fixes 401→302 bug for REST APIs).
+- Registered a `PasswordEncoder` (BCrypt) for secure one-way password hashing, ensuring passwords are never stored in plain text and protecting against common attack vectors. 
+- Added minimal controllers/templates for `/login` and `/`.
+- Verified endpoint protection with integration tests (`SecurityConfigTest`) using MockMvc and `@WithMockUser`.
+- **Key learnings:**
+    - `SecurityFilterChain` is the standard for multi-chain security config in Spring Boot 3+.
+    - `AuthenticationEntryPoint` and `AccessDeniedHandler` control responses for unauthenticated/unauthorized requests.
+    - `UsernameNotFoundException` is the key exception for user-not-found scenarios in authentication flows.
+    - Permitting `/error` prevents security chain fallthrough and unwanted redirects on error dispatches.
+    - Test context (`MockMvc`) vs. real HTTP context can affect observed behavior.
+    - Test annotations (`@DataJpaTest`, `@WebMvcTest`, `@SpringBootTest`) load different app contexts and DB configs.
+- **Gotcha:** Without permitting `/error`, error dispatches from API endpoints can fall through to the web chain, causing 302 redirects to `/login` instead of 401s.
+
+**Implemented registration and login flows with validation and modern UI:**
+
+- Implemented user registration using a dedicated `RegistrationForm` DTO with validation for username, password, and email fields and Thymeleaf template for registration.
+- Added comprehensive validation and error handling for duplicate usernames and emails, including user-friendly error messages.
+- Modernized registration, login, and welcome pages using Bootstrap 5 and Bootstrap Icons for improved user experience.
+- Integrated Thymeleaf Spring Security extras for conditional UI rendering based on authentication state.
+- Developed and passed controller tests for registration success, validation errors, and unique constraint violations.
+- Updated repository tests to verify unique constraints for username and email using `DataIntegrityViolationException` at the correct transaction boundary.
+- **Gotchas:**
+    - Validation annotations must be present on the DTO (not just the entity) for form validation to trigger in the web layer.
+    - Service-level exceptions for duplicate username/email are only thrown if validation passes; validation errors short-circuit before hitting the service.
+    - Spring’s exception translation wraps database unique constraint violations as `DataIntegrityViolationException`; always test at the correct transaction boundary (`save()`).
+    - Form error display requires proper use of `@Valid` and `BindingResult` in controller method signatures to bind and show errors in Thymeleaf.
+    - UI error messages must be mapped to the correct field names in the form to ensure user-friendly feedback.
 ---
 
 ## Planning Forward
 - Deployment options: Heroku, Fly.io, Render
-- Add Users, user authentication and authorization (Spring Security)
 
 - Future:
     - Plan to refactor REST controller methods to use ResponseEntity for better status code handling
@@ -155,7 +181,15 @@ Coverage:
 - @Autowired, @PathVariable, @RequestBody, @ModelAttribute
 - @Valid, @NotBlank, @Email
 - @ControllerAdvice, @ExceptionHandler
-- @ElementCollection, @CollectionTable
+- @ElementCollection, @CollectionTable 
+- @Bean: 
+    - Used to register configuration objects (like SecurityFilterChain and PasswordEncoder) with the Spring context.
+- @MockBean: 
+    - Used in controller tests, which is a Spring Boot feature that lets you inject mocks for dependencies (like your repository)
+- @WithMockUser:
+    - allows you to simulate different roles and users, making it easy to test authorization logic in the future - abstracting away the need for real user setup or password handling.
+- @SpringBootTest: 
+    - Loads the full application context for integration tests, including real security and database configuration.
 
 ## Interfaces & Exceptions Introduced
 
@@ -163,6 +197,10 @@ Coverage:
 - UserDetailsService – Loads user for security
 - UserDetails – Spring Security user contract
 - SimpleGrantedAuthority – Security role wrapper
+- SecurityFilterChain – Defines a set of security rules for a group of endpoints (modern replacement for WebSecurityConfigurerAdapter)
+- PasswordEncoder – Encodes and verifies passwords (e.g., BCryptPasswordEncoder)
+- AuthenticationEntryPoint – Handles unauthenticated requests (e.g., returns 401 for APIs)
+- AccessDeniedHandler – Handles unauthorized requests (e.g., returns 401 for APIs)
 - DataIntegrityViolationException – JPA unique constraint error
 - UsernameNotFoundException – User not found error
 - ContactNotFoundException – Custom missing contact error
