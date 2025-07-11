@@ -7,9 +7,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 @WebMvcTest(ContactController.class)
+@WithMockUser(username = "testuser", roles = {"USER"})
 class ContactControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -56,7 +60,8 @@ class ContactControllerTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts")
                 .param("name", "Alice")
                 .param("email", "alice@example.com")
-                .param("phone", "123-456-7890"))
+                .param("phone", "123-456-7890")
+                .with(csrf()))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().is3xxRedirection())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/contacts"));
     }
@@ -67,7 +72,8 @@ class ContactControllerTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts")
                 .param("name", "") // Name is required
                 .param("email", "bad-email") // Invalid email
-                .param("phone", "")) // Phone is required
+                .param("phone", "") // Phone is required
+                .with(csrf()))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.view().name("contact-form"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.model().attributeHasFieldErrors("contact", "name", "email", "phone"));
@@ -108,7 +114,8 @@ class ContactControllerTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts/edit/1")
                 .param("name", "Alice Updated")
                 .param("email", "alice.updated@example.com")
-                .param("phone", "999-888-7777"))
+                .param("phone", "999-888-7777")
+                .with(csrf()))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().is3xxRedirection())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/contacts"));
     }
@@ -122,7 +129,8 @@ class ContactControllerTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts/edit/1")
                 .param("name", "") // Name is required
                 .param("email", "bad-email") // Invalid email
-                .param("phone", "")) // Phone is required
+                .param("phone", "") // Phone is required
+                .with(csrf()))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.view().name("contact-form"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.model().attributeHasFieldErrors("contact", "name", "email", "phone"));
@@ -131,7 +139,8 @@ class ContactControllerTest {
     @Test
     @DisplayName("POST /contacts/delete/{id} should delete contact and redirect")
     void deleteContact() throws Exception {
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts/delete/1"))
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/contacts/delete/1")
+                .with(csrf()))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().is3xxRedirection())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/contacts"));
         org.mockito.Mockito.verify(contactRepository).deleteById(1L);

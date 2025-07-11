@@ -3,35 +3,61 @@ package com.mmcneil.contactmanager.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
+
+import com.mmcneil.contactmanager.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import com.mmcneil.contactmanager.model.User;
 
-@WebMvcTest(ContactRestController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class ContactRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @MockBean
     private ContactRepository contactRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder; // inject the real encoder
+    
+    @BeforeEach
+    void setupUser() {
+        userRepository.deleteAll(); // Clean up between tests if needed
+        User user = new User();
+        user.setUsername("testuser");
+        user.setEmail("test@test.com");
+        user.setPassword(passwordEncoder.encode("testpassword"));
+        user.setRoles(Set.of("USER")); // Or whatever User entity expects
+        userRepository.save(user);
+    }
+    
     @Test
     @DisplayName("GET /api/contacts should return all contacts as JSON")
     void getAllContacts() throws Exception {
@@ -50,6 +76,7 @@ class ContactRestControllerTest {
         when(contactRepository.findAll()).thenReturn(Arrays.asList(contact1, contact2));
 
         mockMvc.perform(get("/api/contacts")
+        .with(httpBasic("testuser", "testpassword"))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Alice Example"))
@@ -69,6 +96,7 @@ class ContactRestControllerTest {
         when(contactRepository.findById(1L)).thenReturn(Optional.of(contact));
     
         mockMvc.perform(get("/api/contacts/1")
+        .with(httpBasic("testuser", "testpassword"))
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Alice Example"))
@@ -81,6 +109,7 @@ class ContactRestControllerTest {
         when(contactRepository.findById(99L)).thenReturn(Optional.empty());
     
         mockMvc.perform(get("/api/contacts/99")
+        .with(httpBasic("testuser", "testpassword"))
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -100,6 +129,7 @@ class ContactRestControllerTest {
         });
     
         mockMvc.perform(post("/api/contacts")
+        .with(httpBasic("testuser", "testpassword"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(contact)))
                 .andExpect(status().isCreated())
@@ -137,6 +167,7 @@ class ContactRestControllerTest {
         });
 
         mockMvc.perform(put("/api/contacts/1")
+                .with(httpBasic("testuser", "testpassword"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updated)))
                 .andExpect(status().isOk())
@@ -155,6 +186,7 @@ class ContactRestControllerTest {
         when(contactRepository.findById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/contacts/99")
+                .with(httpBasic("testuser", "testpassword"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updated)))
                 .andExpect(status().isNotFound());
@@ -163,7 +195,8 @@ class ContactRestControllerTest {
     @Test
     @DisplayName("DELETE /api/contacts/{id} should delete the contact")
     void deleteContact() throws Exception {
-        mockMvc.perform(delete("/api/contacts/1"))
+        mockMvc.perform(delete("/api/contacts/1")
+                .with(httpBasic("testuser", "testpassword")))
                 .andExpect(status().isOk());
         verify(contactRepository).deleteById(1L);
     }
