@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 
 @Entity
 public class Contact {
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,6 +56,10 @@ public class Contact {
         return phone;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public void setId(long id) {
         this.id = id;
     }
@@ -73,5 +80,9 @@ public class Contact {
     @Override
     public String toString() {
         return String.format("Contact{id='%s', name='%s', email='%s', phone='%s'}", id, name, email, phone);
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

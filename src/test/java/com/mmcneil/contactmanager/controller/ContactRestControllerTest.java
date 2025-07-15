@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,7 +75,7 @@ class ContactRestControllerTest {
         contact2.setEmail("bob@example.com");
         contact2.setPhone("555-555-5555");
 
-        when(contactRepository.findAll()).thenReturn(Arrays.asList(contact1, contact2));
+        when(contactRepository.findByUser(any(User.class))).thenReturn(Arrays.asList(contact1, contact2));
 
         mockMvc.perform(get("/api/contacts")
         .with(httpBasic("testuser", "testpassword"))
@@ -92,6 +94,8 @@ class ContactRestControllerTest {
         contact.setName("Alice Example");
         contact.setEmail("alice@example.com");
         contact.setPhone("123-456-7890");
+        User user = userRepository.findByUsername("testuser").get();
+        contact.setUser(user);
     
         when(contactRepository.findById(1L)).thenReturn(Optional.of(contact));
     
@@ -200,4 +204,102 @@ class ContactRestControllerTest {
                 .andExpect(status().isOk());
         verify(contactRepository).deleteById(1L);
     }
+
+    @Test
+    @DisplayName("GET /api/contacts should only return contacts belonging to the authenticated user")
+    void getAllContacts_onlyReturnsOwnContacts() throws Exception {
+        // Setup: Create two users and save to the real DB
+        User user1 = new User();
+        user1.setUsername("user1");
+        user1.setEmail("user1@example.com");
+        user1.setPassword(passwordEncoder.encode("password1"));
+        user1.setRoles(Set.of("USER"));
+        userRepository.save(user1);
+    
+        User user2 = new User();
+        user2.setUsername("user2");
+        user2.setEmail("user2@example.com");
+        user2.setPassword(passwordEncoder.encode("password2"));
+        user2.setRoles(Set.of("USER"));
+        userRepository.save(user2);
+    
+        // Fetch the managed instances (these are the instances the controller will use)
+        User dbUser1 = userRepository.findByUsername("user1").get();
+        User dbUser2 = userRepository.findByUsername("user2").get();
+    
+        // Setup: Create a contact for each user
+        Contact contact1 = new Contact();
+        contact1.setName("Contact1");
+        contact1.setEmail("c1@example.com");
+        contact1.setPhone("111-111-1111");
+        contact1.setUser(dbUser1);
+    
+        Contact contact2 = new Contact();
+        contact2.setName("Contact2");
+        contact2.setEmail("c2@example.com");
+        contact2.setPhone("222-222-2222");
+        contact2.setUser(dbUser2);
+
+        // Only mock the contact repository, using argument matchers for robust matching
+        when(contactRepository.findByUser(argThat(u -> u != null && u.getUsername().equals("user1")))).thenReturn(Arrays.asList(contact1));
+        when(contactRepository.findByUser(argThat(u -> u != null && u.getUsername().equals("user2")))).thenReturn(Arrays.asList(contact2));
+
+        // Act: user1 requests their contacts
+        mockMvc.perform(get("/api/contacts")
+                        .with(httpBasic("user1", "password1"))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Contact1"))
+                .andExpect(jsonPath("$[0].email").value("c1@example.com"))
+                .andExpect(jsonPath("$", hasSize(1))); // Only one contact returned
+
+        // Act: user2 requests their contacts
+        mockMvc.perform(get("/api/contacts")
+                        .with(httpBasic("user2", "password2"))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Contact2"))
+                .andExpect(jsonPath("$[0].email").value("c2@example.com"))
+                .andExpect(jsonPath("$", hasSize(1))); // Only one contact returned
+    }
+
+    @Test
+    @DisplayName("GET /api/contacts/{id} returns 404 if contact does not belong to authenticated user")
+    void getContactById_forOtherUser_returns404() throws Exception {
+        // Setup: Create two users and save to the real DB
+        User user1 = new User();
+        user1.setUsername("user1");
+        user1.setEmail("user1@example.com");
+        user1.setPassword(passwordEncoder.encode("password1"));
+        user1.setRoles(Set.of("USER"));
+        userRepository.save(user1);
+
+        User user2 = new User();
+        user2.setUsername("user2");
+        user2.setEmail("user2@example.com");
+        user2.setPassword(passwordEncoder.encode("password2"));
+        user2.setRoles(Set.of("USER"));
+        userRepository.save(user2);
+
+        // Fetch managed instance for user2
+        User dbUser2 = userRepository.findByUsername("user2").get();
+
+        // Setup: Create a contact for user2
+        Contact contact2 = new Contact();
+        contact2.setId(42L);
+        contact2.setName("Contact2");
+        contact2.setEmail("c2@example.com");
+        contact2.setPhone("222-222-2222");
+        contact2.setUser(dbUser2);
+
+        // Only mock the contact repository for findById
+        when(contactRepository.findById(42L)).thenReturn(Optional.of(contact2));
+
+        // Act: user1 tries to access user2's contact by ID
+        mockMvc.perform(get("/api/contacts/42")
+                        .with(httpBasic("user1", "password1"))
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
 }

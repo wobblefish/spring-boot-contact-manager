@@ -2,9 +2,13 @@ package com.mmcneil.contactmanager.controller;
 
 import com.mmcneil.contactmanager.model.Contact;
 import com.mmcneil.contactmanager.repository.ContactRepository;
-
+import com.mmcneil.contactmanager.model.User;
+import com.mmcneil.contactmanager.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -17,22 +21,36 @@ import java.util.List;
 public class ContactRestController {
 
     private final ContactRepository contactRepository;
+    private final UserRepository userRepository;
 
-    public ContactRestController(ContactRepository contactRepository) {
+    public ContactRestController(ContactRepository contactRepository, UserRepository userRepository) {
         this.contactRepository = contactRepository;
+        this.userRepository = userRepository;
     }
 
     // GET all contacts
     @GetMapping
     public List<Contact> getContacts() {
-        return contactRepository.findAll();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        return contactRepository.findByUser(user);
     }
 
     // GET contact by id
     @GetMapping("/{id}")
     public Contact getContactsById(@PathVariable long id) {
-        return contactRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        Contact contact = contactRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+        if (!contact.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found");
+        }
+        return contact;
     }
 
     // POST a new contact
