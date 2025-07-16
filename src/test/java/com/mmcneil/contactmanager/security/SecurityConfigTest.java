@@ -1,12 +1,21 @@
 package com.mmcneil.contactmanager.security;
 
+import com.mmcneil.contactmanager.model.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.mmcneil.contactmanager.repository.UserRepository;
+
+import java.util.Optional;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,6 +26,20 @@ class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+    
+    @MockBean
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void setUp() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("user1");
+        user.setEmail("user1@example.com");
+        user.setPassword("password");
+        user.setRoles(Set.of("USER"));
+        Mockito.when(userRepository.findByUsername("user1")).thenReturn(Optional.of(user));
+    }
 
     @Test
     @DisplayName("GET /contacts should require authentication")
