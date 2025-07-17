@@ -1,3 +1,5 @@
+[Live Demo (Railway)](https://spring-boot-contact-manager-production.up.railway.app/)
+
 ### Spring Boot Contact Manager - Learning Journey & Technical Milestones
 
 This project served as a progressive learning platform for modern Java development with Spring Boot. Below is a breakdown of the major milestones achieved and the concepts I explored and applied.
@@ -161,6 +163,19 @@ Coverage:
     - Spring’s exception translation wraps database unique constraint violations as `DataIntegrityViolationException`; always test at the correct transaction boundary (`save()`).
     - Form error display requires proper use of `@Valid` and `BindingResult` in controller method signatures to bind and show errors in Thymeleaf.
     - UI error messages must be mapped to the correct field names in the form to ensure user-friendly feedback.
+
+### User-Scoped Data Access & REST API Security
+- Refactored all contact-related endpoints (web and REST) to enforce user-scoped data: every contact is always associated with a specific user, and users can only access, modify, or delete their own contacts.
+- Updated both MVC and REST controllers to retrieve the current user from the security context and query contacts using `findByUser(...)` or equivalent ownership checks.
+- Hardened controller logic to return 404 Not Found for attempts to access another user's contact, preventing both data leaks and accidental NPEs.
+- Added/updated tests to verify user isolation for all endpoints, including REST API, using both MockMvc with HTTP Basic and real database users.
+- Ensured all test and seed data assigns a valid user to each contact, and added defensive checks to avoid null user references.
+- Verified REST endpoints return 401 Unauthorized for unauthenticated requests and 404 for unauthorized access, matching best practices for RESTful security.
+
+**Gotchas:**
+- All contacts in the database must have a non-null user field; missing associations will cause 500 errors.
+- When testing REST endpoints, use HTTP Basic Auth (not `@WithMockUser`), and ensure the test user exists in the database with a valid password.
+- Ownership checks must be enforced at the controller/service layer for every data access, not just queries.
 ---
 
 ## Planning Forward
@@ -173,35 +188,40 @@ Coverage:
 
 ## Annotations Learned
 
-- @SpringBootApplication
-- @Override
-- @Entity, @Table, @Id, @GeneratedValue, @Column(unique = true)
-- @RestController, @Controller
-- @RequestMapping, @GetMapping, @PostMapping, @DeleteMapping
-- @Autowired, @PathVariable, @RequestBody, @ModelAttribute
-- @Valid, @NotBlank, @Email
-- @ControllerAdvice, @ExceptionHandler
-- @ElementCollection, @CollectionTable 
-- @Bean: 
-    - Used to register configuration objects (like SecurityFilterChain and PasswordEncoder) with the Spring context.
-- @MockBean: 
-    - Used in controller tests, which is a Spring Boot feature that lets you inject mocks for dependencies (like your repository)
-- @WithMockUser:
-    - allows you to simulate different roles and users, making it easy to test authorization logic in the future - abstracting away the need for real user setup or password handling.
-- @SpringBootTest: 
-    - Loads the full application context for integration tests, including real security and database configuration.
+**Annotations & Test Utilities**
+- `@SpringBootApplication` — Main Spring Boot application entry point.
+- `@Override` — Indicates a method overrides a superclass method.
+- `@Entity`, `@Table`, `@Id`, `@GeneratedValue`, `@Column(unique = true)` — JPA entity and mapping annotations for persistence.
+- `@RestController`, `@Controller` — Marks a class as a REST or MVC controller.
+- `@RequestMapping`, `@GetMapping`, `@PostMapping`, `@DeleteMapping` — Defines HTTP endpoint mappings.
+- `@Autowired`, `@PathVariable`, `@RequestBody`, `@ModelAttribute` — Dependency injection and request parameter binding.
+- `@Valid`, `@NotBlank`, `@Email` — Validation annotations for request data.
+- `@ControllerAdvice`, `@ExceptionHandler` — Global exception and error handling.
+- `@ElementCollection`, `@CollectionTable` — JPA annotations for mapping collections.
+- `@Bean` — Registers configuration objects (e.g., `SecurityFilterChain`, `PasswordEncoder`) with the Spring context.
+- `@MockBean` — Injects mocks for dependencies in Spring Boot tests (e.g., repositories).
+- `@WithMockUser` — Simulates different users/roles in security tests, abstracting away real user setup.
+- `@SpringBootTest` — Loads the full application context for integration tests, including security and DB config.
+- `@ManyToOne` — Associates each contact with a user (ownership) in JPA.
+- `@RequestHeader("Authorization")` — Used in REST controller tests to pass HTTP Basic or Bearer tokens.
+- `httpBasic(...)` (MockMvc) — Utility for simulating HTTP Basic authentication in REST tests.
+- Defensive null checks — Always verify entity relationships before dereferencing in API logic.
+
 
 ## Interfaces & Exceptions Introduced
 
-- JpaRepository – Spring Data repository base
-- UserDetailsService – Loads user for security
-- UserDetails – Spring Security user contract
-- SimpleGrantedAuthority – Security role wrapper
-- SecurityFilterChain – Defines a set of security rules for a group of endpoints (modern replacement for WebSecurityConfigurerAdapter)
-- PasswordEncoder – Encodes and verifies passwords (e.g., BCryptPasswordEncoder)
-- AuthenticationEntryPoint – Handles unauthenticated requests (e.g., returns 401 for APIs)
-- AccessDeniedHandler – Handles unauthorized requests (e.g., returns 401 for APIs)
-- DataIntegrityViolationException – JPA unique constraint error
-- UsernameNotFoundException – User not found error
-- ContactNotFoundException – Custom missing contact error
-- NoHandlerFoundException – Spring MVC 404 handler
+**Interfaces & Exceptions Introduced**
+- `JpaRepository` — Spring Data repository base interface for CRUD operations.
+- `UserDetailsService` — Loads user for Spring Security authentication.
+- `UserDetails` — Spring Security user contract.
+- `SimpleGrantedAuthority` — Wrapper for user roles/authorities in security.
+- `SecurityFilterChain` — Defines security rules for endpoint groups (modern replacement for `WebSecurityConfigurerAdapter`).
+- `PasswordEncoder` — Encodes and verifies passwords (e.g., `BCryptPasswordEncoder`).
+- `AuthenticationEntryPoint` — Handles unauthenticated requests (e.g., returns 401 for APIs).
+- `AccessDeniedHandler` — Handles unauthorized requests (e.g., returns 401 for APIs).
+- `DataIntegrityViolationException` — JPA unique constraint violation error.
+- `UsernameNotFoundException` — Thrown when a user is not found.
+- `ContactNotFoundException` — Custom exception for missing contacts.
+- `NoHandlerFoundException` — Spring MVC 404 handler for unmapped URLs.
+- `ResponseStatusException` — Used to return 404 or 401 from REST controllers on access/ownership violations.
+- User-Scoped Query Methods — Custom repository methods like `findByUser(User user)` to enforce data isolation.
