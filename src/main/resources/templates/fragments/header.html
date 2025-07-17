@@ -1,0 +1,21 @@
+<nav th:fragment="header" class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container-fluid">
+        <!-- Logo and App Name -->
+        <a class="navbar-brand d-flex align-items-center" th:href="@{/}">
+            <i class="bi bi-person-lines-fill me-2"
+               style="font-size:2.5rem;background:linear-gradient(120deg,#176ca2 0%,#11998e 40%,#176ca2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:transparent;"></i>
+            <span class="fw-bold fs-4">Contact Manager</span>
+        </a>
+        <div class="ms-auto d-flex align-items-center">
+      <span class="me-3" sec:authorize="isAuthenticated()">
+        <i class="bi bi-person-circle me-1"></i>
+        <span sec:authentication="name"></span>
+      </span>
+            <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Sign Out</button>
+            </form>
+            <a th:href="@{/login}" class="btn btn-outline-primary btn-sm ms-2" sec:authorize="!isAuthenticated()">Sign In</a>
+            <a th:href="@{/register}" class="btn btn-outline-success btn-sm ms-2" sec:authorize="!isAuthenticated()">Register</a>
+        </div>
+    </div>
+</nav>
